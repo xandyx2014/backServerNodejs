@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const app = express();
-const Usuario = require('../models/usuario');
+const Medico = require('../models/medico');
 const {verificaToken} = require('../middlewares/autentificacion')
 //body parser
 const bodyParser = require('body-parser');
@@ -11,17 +11,17 @@ app.use(bodyParser.urlencoded({
   extended: false
 }))
 app.use(bodyParser.json())
-//obtener todos los usuarios
+app.use(bodyParser.json())
+//obtener todos los Hospital
 app.get('/', (req, res) => {
-  //el query son las variables obciones de la uri
-  //ejemplo ?desde=5
   let desde = Number(req.query.desde) || 0;
-
-  Usuario.find({}, 'nombre email img role')
+  Medico.find({})
   .skip(desde)
   .limit(5)
+  .populate('usuario','nombre email')
+  .populate('hospital')
   .exec(
-    (err, usuarios) => {
+    (err, medico) => {
       if (err) {
         return res.status(500).json({
           ok: false,
@@ -29,14 +29,13 @@ app.get('/', (req, res) => {
           errors: err
         })
       }
-      Usuario.count({},(err,conteo)=>{
+      Medico.count({},(err,conteo)=>{ 
         res.status(200).json({
           ok: true,
-          usuarios: usuarios,
+          medico: medico,
           total:conteo
         })
-      });
-      
+      })
     }
   )
 });
@@ -44,25 +43,22 @@ app.get('/', (req, res) => {
 //creando usuario
 app.post('/',verificaToken,(req, res) => {
   let body = req.body;
-  let usuario = new Usuario({
+  let medico = new Medico({
     nombre: body.nombre,
-    email: body.email,
-    password: bcrypt.hashSync(body.password, 10),
-    img: body.img,
-    rolee: body.role
+    usuario:req.usuario._id,
+    hospital:req.body.hospital
   })
-  usuario.save((err, usuarioGuardado) => {
+  medico.save((err, usuarioGuardado) => {
     if (err) {
       return res.status(400).json({
         ok: false,
-        mensaje: 'Error al Crear Usuario',
+        mensaje: 'Error al Crear medico',
         errors: err
       })
     }
     res.status(201).json({
       ok: true,
-      usuarios: usuarioGuardado,
-      usuarioToken:req.usuario
+      Hospital: usuarioGuardado,
     })
   })
 })
@@ -75,24 +71,27 @@ app.post('/',verificaToken,(req, res) => {
 //actualizar usuario
 app.put('/:id',verificaToken ,(req, res) => {
   let id = req.params.id;
-  Usuario.findById(id, (err, usuario) => {
+  Medico.findById(id, (err, medico) => {
     if (err) {
       return res.status(500).json({
         ok: false,
-        mensaje: 'Error al Buscar Usuario',
+        mensaje: 'Error al Buscar medico',
         errors: err
       })
     }
-    if (!usuario) {
+    if (!medico) {
       return res.status(400).json({
         ok: false,
-        mensaje: 'Error al Buscar ID Usuario no existe',
+        mensaje: 'Error al Buscar ID medico no existe',
         errors: {
-          message: 'No existe un usuario con ese ID'
+          message: 'No existe un medico con ese ID'
         }
       })
     }
-    Usuario.findByIdAndUpdate(id, req.body, function (err, usuario) {
+    medico.nombre = req.body.nombre;
+    medico.usuario= req.usuario._id;
+    medico.hospital=req.body.hospital;
+    medico.save((err,medicoGuardado)=>{
       if (err) {
         return res.status(400).json({
           ok: false,
@@ -100,18 +99,20 @@ app.put('/:id',verificaToken ,(req, res) => {
           errors: err
         })
       }
-      usuario.password = '...'
+      
       res.status(200).json({
         ok: true,
-        usuario: usuario
+        usuario: medico
       })
-    });
+    })
+    
+    
   });
 });
 //Eliminar Usuario
 app.delete('/:id',verificaToken ,(req, res) => {
   let id = req.params.id;
-  Usuario.findByIdAndRemove(id, (err, usuario) => {
+  Medico.findByIdAndRemove(id, (err, usuario) => {
     if (err) {
       return res.status(400).json({
         ok: false,
@@ -128,8 +129,9 @@ app.delete('/:id',verificaToken ,(req, res) => {
     }
     res.status(200).json({
       ok: true,
-      usuario: usuario
+      Medico: usuario
     })
   });
 })
-module.exports = app;
+
+module.exports=app;
