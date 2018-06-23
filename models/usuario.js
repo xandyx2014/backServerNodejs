@@ -32,6 +32,10 @@ const usuarioSchema= new Schema({
     default:'USER_ROLE',
     enum:ROLESVALIDOS
   },
+  google:{
+    type:Boolean,
+    default:false
+  }
 });
 //sirve para mostrar un mensaje de error de validacion 
 usuarioSchema.plugin(uniqueValidator,{
