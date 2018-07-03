@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
   //ejemplo ?desde=5
   let desde = Number(req.query.desde) || 0;
 
-  Usuario.find({}, 'nombre email img role')
+  Usuario.find({}, 'nombre email img role google')
   .skip(desde)
   .limit(5)
   .exec(
@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
 });
 
 //creando usuario
-app.post('/',verificaToken,(req, res) => {
+app.post('/',(req, res) => {
   let body = req.body;
   let usuario = new Usuario({
     nombre: body.nombre,
@@ -92,19 +92,28 @@ app.put('/:id',verificaToken ,(req, res) => {
         }
       })
     }
-    Usuario.findByIdAndUpdate(id, req.body, function (err, usuario) {
-      if (err) {
-        return res.status(400).json({
-          ok: false,
-          mensaje: 'Error al Actualizar Usuario',
-          errors: err
-        })
-      }
-      usuario.password = '...'
-      res.status(200).json({
-        ok: true,
-        usuario: usuario
-      })
+    
+    usuario.nombre = req.body.nombre;
+    usuario.email = req.body.email;
+    usuario.role = req.body.role;
+
+    usuario.save((err, usuarioGuardado) => {
+
+        if (err) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'Error al actualizar usuario',
+                errors: err
+            });
+        }
+
+        usuarioGuardado.password = '...';
+
+        res.status(200).json({
+            ok: true,
+            usuario: usuarioGuardado
+        });
+
     });
   });
 });

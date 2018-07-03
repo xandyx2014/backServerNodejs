@@ -39,6 +39,34 @@ app.get('/', (req, res) => {
     }
   )
 });
+app.get('/:id',(req,res)=>{
+  let id= req.params.id
+  Medico.findById(id)
+        .populate('usuario','nombre email img')
+        .populate('hospital')
+        .exec((err,medico)=>{
+          if (err) {
+            return res.status(500).json({
+              ok: false,
+              mensaje: 'Error al Buscar medico',
+              errors: err
+            })
+          }
+          if (!medico) {
+            return res.status(400).json({
+              ok: false,
+              mensaje: 'Error al Buscar ID medico no existe',
+              errors: {
+                message: 'No existe un medico con ese ID'
+              }
+            })
+          }
+          res.status(200).json({
+            ok:true,
+            medico
+          })
+        })
+})
 
 //creando usuario
 app.post('/',verificaToken,(req, res) => {
@@ -58,7 +86,7 @@ app.post('/',verificaToken,(req, res) => {
     }
     res.status(201).json({
       ok: true,
-      Hospital: usuarioGuardado,
+      medico: usuarioGuardado,
     })
   })
 })
@@ -102,7 +130,7 @@ app.put('/:id',verificaToken ,(req, res) => {
       
       res.status(200).json({
         ok: true,
-        usuario: medico
+        medico: medico
       })
     })
     

@@ -16,36 +16,63 @@ app.use(bodyParser.json())
 app.get('/', (req, res) => {
   let desde = Number(req.query.desde) || 0;
   Hospital.find({})
-  .skip(desde)
-  .limit(5)
-  .populate('usuario','nombre email')
-  .exec(
-    (err, hospitales) => {
+    .skip(desde)
+    .limit(5)
+    .populate('usuario', 'nombre email')
+    .exec(
+      (err, hospitales) => {
+        if (err) {
+          return res.status(500).json({
+            ok: false,
+            mensaje: 'Error Cargando Usuario',
+            errors: err
+          })
+        }
+        Hospital.count({}, (err, conteo) => {
+          res.status(200).json({
+            ok: true,
+            hospitales,
+            total: conteo
+          })
+
+        })
+      }
+    )
+});
+app.get('/:id', (req, res) => {
+  var id = req.params.id;
+  Hospital.findById(id)
+    .populate('usuario', 'nombre img email')
+    .exec((err, hospital) => {
       if (err) {
         return res.status(500).json({
           ok: false,
-          mensaje: 'Error Cargando Usuario',
+          mensaje: 'Error al buscar hospital',
           errors: err
-        })
+        });
       }
-      Hospital.count({},(err,conteo)=>{
-        res.status(200).json({
-          ok: true,
-          hospitales,
-          total:conteo
-        })
-        
-      })
-    }
-  )
-});
+      if (!hospital) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: 'El hospital con el id ' + id + 'no existe',
+          errors: {
+            message: 'No existe un hospitalcon ese ID'
+          }
+        });
+      }
+      res.status(200).json({
+        ok: true,
+        hospital: hospital
+      });
+    })
+})
 
 //creando usuario
-app.post('/',verificaToken,(req, res) => {
+app.post('/', verificaToken, (req, res) => {
   let body = req.body;
   let hospital = new Hospital({
     nombre: body.nombre,
-    usuario:req.usuario._id
+    usuario: req.usuario._id
   })
   hospital.save((err, hospitalGuardado) => {
     if (err) {
@@ -58,7 +85,7 @@ app.post('/',verificaToken,(req, res) => {
     res.status(201).json({
       ok: true,
       hospital: hospitalGuardado,
-     
+
     })
   })
 })
@@ -69,7 +96,7 @@ app.post('/',verificaToken,(req, res) => {
 
 
 //actualizar usuario
-app.put('/:id',verificaToken ,(req, res) => {
+app.put('/:id', verificaToken, (req, res) => {
   let id = req.params.id;
   Hospital.findById(id, (err, hospital) => {
     if (err) {
@@ -88,9 +115,9 @@ app.put('/:id',verificaToken ,(req, res) => {
         }
       })
     }
-    hospital.nombre=req.body.nombre;
-    hospital.usuario=req.usuario._id;
-    hospital.save((err,hospitalGuardado)=>{
+    hospital.nombre = req.body.nombre;
+    hospital.usuario = req.usuario._id;
+    hospital.save((err, hospitalGuardado) => {
       if (err) {
         return res.status(400).json({
           ok: false,
@@ -106,7 +133,7 @@ app.put('/:id',verificaToken ,(req, res) => {
   });
 });
 //Eliminar Hospital
-app.delete('/:id',verificaToken ,(req, res) => {
+app.delete('/:id', verificaToken, (req, res) => {
   let id = req.params.id;
   Hospital.findByIdAndRemove(id, (err, hospitalborrado) => {
     if (err) {
@@ -120,7 +147,9 @@ app.delete('/:id',verificaToken ,(req, res) => {
       return res.status(400).json({
         ok: false,
         mensaje: 'Mo existe un hospital con ese id',
-        errors: {message:'Id no encontrado'}
+        errors: {
+          message: 'Id no encontrado'
+        }
       })
     }
     res.status(200).json({
@@ -129,4 +158,4 @@ app.delete('/:id',verificaToken ,(req, res) => {
     })
   });
 })
-module.exports=app;
+module.exports = app;
