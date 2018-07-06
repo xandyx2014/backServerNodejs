@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const app = express();
 const Usuario = require('../models/usuario');
-const {verificaToken} = require('../middlewares/autentificacion')
+const {verificaToken,verificaAdminRole,verificaAdmin_o_MismoUsuario} = require('../middlewares/autentificacion')
 //body parser
 const bodyParser = require('body-parser');
 // parse application/x-www-form-urlencoded
@@ -73,7 +73,7 @@ app.post('/',(req, res) => {
 
 
 //actualizar usuario
-app.put('/:id',verificaToken ,(req, res) => {
+app.put('/:id',[verificaToken,verificaAdmin_o_MismoUsuario] ,(req, res) => {
   let id = req.params.id;
   Usuario.findById(id, (err, usuario) => {
     if (err) {
@@ -118,7 +118,7 @@ app.put('/:id',verificaToken ,(req, res) => {
   });
 });
 //Eliminar Usuario
-app.delete('/:id',verificaToken ,(req, res) => {
+app.delete('/:id',[verificaToken,verificaAdminRole] ,(req, res) => {
   let id = req.params.id;
   Usuario.findByIdAndRemove(id, (err, usuario) => {
     if (err) {
